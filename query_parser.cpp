@@ -93,10 +93,6 @@ auto qparse::parse_suffix(std::string::const_iterator& beg, std::string::const_i
     return qparse::parse_meta(beg, end, "$");
 }
 
-auto qparse::parse_default(std::string::const_iterator& beg, std::string::const_iterator end) -> std::string {
-    return qparse::parse_fuzzy(beg, end);
-}
-
 auto qparse::parse_neg(std::string::const_iterator& beg, std::string::const_iterator end, bool ignore_neg, const qdata::SearchArgs& search_args) -> std::unique_ptr<filtertree::Filter> {
     return qparse::select_parse(beg, end, true, search_args);
 }
@@ -169,22 +165,22 @@ auto qparse::select_parse(std::string::const_iterator& beg, std::string::const_i
     if (ch == '^') {
         ++beg;
         s = qparse::parse_prefix(beg, end);
-        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find_prefix, filtertree::FilterType::VARIABLE);
+        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find_prefix, filtertree::FilterType::VARIABLE);
     }
     else if (ch == '$') {
         ++beg;
         s = qparse::parse_suffix(beg, end);
-        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find_suffix, filtertree::FilterType::VARIABLE);
+        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find_suffix, filtertree::FilterType::VARIABLE);
     }
     else if (ch == '"') {
         ++beg;
         s = qparse::parse_phrase(beg, end);
-        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find_subseq, filtertree::FilterType::VARIABLE);
+        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find_subseq, filtertree::FilterType::VARIABLE);
     }
     else if (ch == '=') {
         ++beg;
         s = qparse::parse_exact(beg, end, exact_delims);
-        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find, filtertree::FilterType::VARIABLE);
+        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find, filtertree::FilterType::VARIABLE);
     }
     else if ((ch == '!') && !ignore_neg) {
         ++beg;
@@ -194,28 +190,28 @@ auto qparse::select_parse(std::string::const_iterator& beg, std::string::const_i
     else if (ch == '~') {
         ++beg;
         s = qparse::parse_fuzzy(beg, end);
-        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find_subseq, filtertree::FilterType::VARIABLE);
+        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find_subseq, filtertree::FilterType::VARIABLE);
     }
     else if (ch == '(') {
         ++beg;
         if (ignore_neg) {
-            qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find, filtertree::FilterType::NOT_GRP_BEGIN);
+            qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find, filtertree::FilterType::NOT_GRP_BEGIN);
         }
         else {
-            qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find, filtertree::FilterType::GRP_BEGIN);
+            qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find, filtertree::FilterType::GRP_BEGIN);
         }
     }
     else if (ch == ')') {
         ++beg;
-        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find, filtertree::FilterType::GRP_END);
+        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find, filtertree::FilterType::GRP_END);
     }
     else if (ch == '|') {
         ++beg;
-        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find, filtertree::FilterType::OR);
+        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find, filtertree::FilterType::OR);
     }
     else {
-        s = qparse::parse_default(beg, end);
-        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args)), false, filters::find_subseq, filtertree::FilterType::VARIABLE);
+        s = qparse::parse_exact(beg, end, exact_delims);
+        qp = std::make_unique<filtertree::Filter>(std::move(qdata::QueryData(search_args, s)), false, filters::find, filtertree::FilterType::VARIABLE);
     }
     return qp;
 }

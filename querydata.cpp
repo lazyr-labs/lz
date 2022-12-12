@@ -86,13 +86,17 @@ auto upper(std::string& s) -> void {
     }
 }
 
-qdata::QueryData::QueryData(const qdata::SearchArgs& search_args) {
+qdata::QueryData::QueryData(const qdata::SearchArgs& search_args)
+    : qdata::QueryData(search_args, search_args.q) {
+}
+
+qdata::QueryData::QueryData(const qdata::SearchArgs& search_args, const std::string& q) {
     this->ignore_case = search_args.ignore_case;
     this->topk = search_args.topk;
     this->preserve_order = search_args.preserve_order;
     this->max_symbol_dist = search_args.max_symbol_dist;
     this->word_delims = search_args.word_delims;
-    this->q = search_args.q;
+    this->q = q;
 
     auto q_len = this->q.size();
     auto q_cases = std::vector<const char*>(q_len);

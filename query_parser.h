@@ -87,10 +87,6 @@ auto parse_prefix(std::string::const_iterator& beg, std::string::const_iterator 
 */
 auto parse_suffix(std::string::const_iterator& beg, std::string::const_iterator end) -> std::string;
 /**
- * Convenience function for readability when parsing a default string that calls `parse_meta`.
-*/
-auto parse_default(std::string::const_iterator& beg, std::string::const_iterator end) -> std::string;
-/**
  * Negate the filter created by the string that follows a `!` symbol.
  *
  * For example, for the string `!=asdf`, a Filter for `asdf` is

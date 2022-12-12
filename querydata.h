@@ -54,6 +54,7 @@ struct QueryData {
     std::string word_delims;
 
     explicit QueryData(const SearchArgs& sa);
+    QueryData(const SearchArgs& sa, const std::string& s);
     QueryData() {};
 };
 
