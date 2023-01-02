@@ -50,7 +50,6 @@
 #include "fuzzy.h"
 #include "scores.h"
 
-namespace qparse = qryparser;
 namespace qdata = qrydata;
 
 /**
