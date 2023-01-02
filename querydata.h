@@ -23,6 +23,10 @@ struct SearchArgs {
     std::string gap_penalty;
     std::string word_delims;
     bool show_color;
+    bool show_count;
+    bool show_score;
+    bool show_line;
+    bool trim_empty;
 };
 
 /**

@@ -69,10 +69,27 @@ auto get_cmdline_args(int argc, char* argv[]) -> qdata::SearchArgs {
         .gap_penalty="linear",
         .word_delims=":;,./-_ \t",
         .show_color=true,
+        .show_count=true,
+        .show_score=true,
+        .show_line=true,
+        .trim_empty=false,
     };
 
-    const auto shortopts = "opICik:s:g:d:";
-    const int BATCH_SIZE=1, NO_COLOR='C', GAP_PENALTY='g', MAX_SYMBOL_GAP='s', PRESERVE_ORDER='o', PARALLEL='p', TOPK='k', NO_IGNORE_CASE='I', IGNORE_CASE='i', WORD_DELIMS='d';
+    const auto shortopts = "opIClciStk:s:g:d:";
+    const int BATCH_SIZE=1,
+              NO_COLOR='C',
+              GAP_PENALTY='g',
+              MAX_SYMBOL_GAP='s',
+              PRESERVE_ORDER='o',
+              PARALLEL='p',
+              TOPK='k',
+              NO_IGNORE_CASE='I',
+              IGNORE_CASE='i',
+              WORD_DELIMS='d',
+              NO_COUNT='c',
+              NO_SCORE='S',
+              NO_LINE='l',
+              TRIM_EMPTY='t';
 
     int opt_idx;
     option longopts[] = {
@@ -86,6 +103,10 @@ auto get_cmdline_args(int argc, char* argv[]) -> qdata::SearchArgs {
         option{.name="gap-penalty", .has_arg=required_argument, .flag=0, .val=GAP_PENALTY},
         option{.name="word-delims", .has_arg=required_argument, .flag=0, .val=WORD_DELIMS},
         option{.name="no-color", .has_arg=required_argument, .flag=0, .val=NO_COLOR},
+        option{.name="no-score", .has_arg=required_argument, .flag=0, .val=NO_SCORE},
+        option{.name="no-count", .has_arg=required_argument, .flag=0, .val=NO_COUNT},
+        option{.name="no-line", .has_arg=required_argument, .flag=0, .val=NO_LINE},
+        option{.name="trim-empty-filenames", .has_arg=required_argument, .flag=0, .val=TRIM_EMPTY},
         option{.name=0, .has_arg=0, .flag=0, .val=0},
     };
 
@@ -132,6 +153,18 @@ auto get_cmdline_args(int argc, char* argv[]) -> qdata::SearchArgs {
             case NO_COLOR:
                 search_args.show_color = false;
                 break;
+            case NO_SCORE:
+                search_args.show_score = false;
+                break;
+            case NO_COUNT:
+                search_args.show_count = false;
+                break;
+            case NO_LINE:
+                search_args.show_line = false;
+                break;
+            case TRIM_EMPTY:
+                search_args.trim_empty = true;
+                break;
         }
     }
 
@@ -158,20 +191,31 @@ auto get_cmdline_args(int argc, char* argv[]) -> qdata::SearchArgs {
  * Show the first `topk` pairs of `scores`.
 */
 template<typename ContainerOfPairs>
-auto print_scores(const ContainerOfPairs& scores, int topk, bool show_color) -> void {
+auto print_scores(const ContainerOfPairs& scores, auto search_args) -> void {
     auto beg = std::cbegin(scores);
-    auto end = scores.size() < topk ? std::cend(scores) : beg + topk;
+    auto end = scores.size() < search_args.topk ? std::cend(scores) : beg + search_args.topk;
 
     const auto red = "\033[31m";
     const auto reset = "\033[0m";
     for (; beg != end; ++beg) {
-        if (!show_color) {
-            std::cout << beg->first.score << " " << beg->second.filename << " " << beg->second.lineno << " " << beg->second.text << std::endl;
+        if (!search_args.show_color) {
+            if (search_args.show_count)
+                std::cout << beg->first.score << " ";
+            if (!search_args.trim_empty || beg->second.filename.length() > 0)
+                std::cout << beg->second.filename << " ";
+            if (search_args.show_line)
+                std::cout << beg->second.lineno << " ";
+            std::cout << beg->second.text << std::endl;
             continue;
         }
         //std::cout << beg->first.score << " " << beg->second << std::endl;
         //std::cout << red << beg->first.score << " " << beg->second << reset << std::endl;
-        std::cout << beg->first.score << " " << beg->second.filename << " " << beg->second.lineno << " ";
+        if (search_args.show_score)
+            std::cout << beg->first.score << " ";
+        if (!search_args.trim_empty || beg->second.filename.length() > 0)
+            std::cout<<beg->second.filename << " " ;
+        if (search_args.show_line)
+            std::cout << beg->second.lineno << " ";
         int prev = 0;
         auto strbeg = std::cbegin(beg->second.text);
         for (const auto& aj : beg->first.path) {
@@ -183,7 +227,8 @@ auto print_scores(const ContainerOfPairs& scores, int topk, bool show_color) -> 
         const std::string_view tmp(strbeg + prev, std::cend(beg->second.text));
         std::cout << tmp << std::endl;
     }
-    std::cout << scores.size() << std::endl;
+    if (search_args.show_count)
+        std::cout << scores.size() << std::endl;
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -204,7 +249,7 @@ auto main(int argc, char* argv[]) -> int {
             }
     })();
 
-    print_scores(scores, search_args.topk, search_args.show_color);
+    print_scores(scores, search_args);
 
     return 0;
 }
